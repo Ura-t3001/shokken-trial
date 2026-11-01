@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>食券お試し版</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
 <style>
 /* Layout: 1 column phone app. Top tabs switch between 注文 / 会計 / 焼きそば窓口 / カレー窓口.
    Palette: ink navy on pale blue paper; 焼きそば = orange, カレー = blue, so each window is told apart by colour. */
@@ -14,6 +14,7 @@
   --qr-bg:#FFFFFF; --qr-fg:#000000;
   --font-d:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
   --font-b:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  --font-n:"IBM Plex Mono","Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -45,7 +46,7 @@ button,input{font:inherit;color:inherit}
 h1{font-size:20px;font-weight:900;text-wrap:balance}
 .net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
 .net.shared{background:var(--ok-soft);color:var(--ok)}
-#tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:14px}
+#tabs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);gap:10px;margin-top:14px}
 .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:6px 2px;text-decoration:none;color:var(--ink);
   background:var(--surface);border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:15px;line-height:1.25;text-align:center}
 .tab small{font-size:11px;font-weight:500;color:var(--muted)}
@@ -54,6 +55,21 @@ h1{font-size:20px;font-weight:900;text-wrap:balance}
 .tab[aria-current="page"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
 .tab[aria-current="page"] small{color:inherit;opacity:.8}
 
+.grp{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gcap{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-align:center}
+.grp3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.g-staff{border-left:2px dashed var(--line);padding-left:10px}
+.tab{min-height:68px;gap:3px}
+.tab svg{width:22px;height:22px;flex:none}
+.t-order{border-bottom:4px solid var(--ink)}
+.t-cash{border-bottom:4px solid var(--ok)}
+.t-cash svg{color:var(--ok)}
+.tab-y svg{color:var(--y)}
+.tab-c svg{color:var(--c)}
+.tab[aria-current="page"] svg{color:inherit}
+.t-cash[aria-current="page"]{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.tab-y[aria-current="page"]{background:var(--y);border-color:var(--y);color:var(--y-ink)}
+.tab-c[aria-current="page"]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
 .panel h2{font-size:18px;font-weight:900}
 .sub{color:var(--muted);font-size:14px}
@@ -66,7 +82,7 @@ h1{font-size:20px;font-weight:900;text-wrap:balance}
 .sw{width:16px;height:16px;border-radius:4px;flex:none}
 .sw-y{background:var(--y)} .sw-c{background:var(--c)}
 .step{display:inline-flex;align-items:center;gap:10px}
-.step output{font-family:var(--font-d);font-size:24px;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+.step output{font-family:var(--font-n);font-weight:700;font-size:24px;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
 .sb{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-size:22px;line-height:1;cursor:pointer}
 .sb:active{background:var(--bg)}
 
@@ -74,12 +90,14 @@ fieldset{border:0;margin:14px 0 0;padding:0;min-width:0}
 legend{font-weight:700;font-size:14px;color:var(--muted);padding:0;margin-bottom:6px}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .opt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-height:56px}
-.opt:has(input:checked){border-color:var(--ink);background:var(--bg)}
-.opt input{width:20px;height:20px;accent-color:var(--ink);flex:none}
+.opt:has(input:checked){border-color:var(--btn);background:var(--btn);color:var(--btn-ink)}
+.opt:has(input:checked) small{color:inherit;opacity:.85}
+.opt input{appearance:none;-webkit-appearance:none;margin:0;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex:none}
+.opt input:checked{border-color:var(--btn-ink);background:var(--btn-ink);box-shadow:inset 0 0 0 5px var(--btn)}
 .opt b{display:block;line-height:1.3}
 .opt small{color:var(--muted);font-size:12px;line-height:1.3;display:block}
 .sumline{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px}
-.sumline strong{font-family:var(--font-d);font-size:28px;font-variant-numeric:tabular-nums}
+.sumline strong{font-family:var(--font-n);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 20px;border:0;border-radius:12px;background:var(--btn);color:var(--btn-ink);font-weight:900;font-size:17px;cursor:pointer}
 .btn.block{width:100%;margin-top:12px}
@@ -92,10 +110,10 @@ legend{font-weight:700;font-size:14px;color:var(--muted);padding:0;margin-bottom
 .notice.ok{background:var(--ok-soft);color:var(--ok)}
 .notice.warn{background:var(--warn-soft);color:var(--warn)}
 .notice.bad{background:var(--bad-soft);color:var(--bad)}
-.notice b{font-family:var(--font-d);font-size:1.25em;letter-spacing:.08em;font-weight:400}
+.notice b{font-family:var(--font-n);font-size:1.15em;letter-spacing:.06em;font-weight:700}
 
 .ohead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
-.code-big{font-family:var(--font-d);font-size:52px;line-height:1;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+.code-big{font-family:var(--font-n);font-weight:700;font-size:46px;line-height:1;letter-spacing:.1em;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
 .pill.wait{background:var(--warn-soft);color:var(--warn)}
@@ -112,12 +130,12 @@ legend{font-weight:700;font-size:14px;color:var(--muted);padding:0;margin-bottom
 .qr.empty{display:grid;place-items:center;text-align:center;background:var(--bg);border:2px dashed var(--line);color:var(--muted);font-weight:700;font-size:15px;padding:16px}
 .used-mark{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 72%,transparent);border-radius:8px}
 .used-mark span{transform:rotate(-12deg);border:4px solid var(--bad);color:var(--bad);font-family:var(--font-d);font-size:26px;padding:4px 14px;border-radius:6px;background:var(--surface)}
-.t-code{font-family:var(--font-d);font-size:22px;letter-spacing:.14em;font-variant-numeric:tabular-nums}
+.t-code{font-family:var(--font-n);font-weight:700;font-size:20px;letter-spacing:.1em;font-variant-numeric:tabular-nums}
 
 .stats{display:flex;gap:0;margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
 .stats>div{flex:1;min-width:0;padding:12px 8px;text-align:center}
 .stats>div+div{border-left:1px solid var(--line)}
-.stats b{display:block;font-family:var(--font-d);font-size:22px;font-weight:400;font-variant-numeric:tabular-nums}
+.stats b{display:block;font-family:var(--font-n);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
 .stats span{font-size:12px;color:var(--muted)}
 .seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden}
 .seg button{border:0;background:var(--surface);min-height:42px;padding:0 16px;font-weight:700;cursor:pointer}
@@ -126,7 +144,7 @@ legend{font-weight:700;font-size:14px;color:var(--muted);padding:0;margin-bottom
 ul.olist{list-style:none;margin:8px 0 0;padding:0}
 .orow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"code act" "info info";gap:6px 12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
 .orow>div:nth-child(2){grid-area:info}
-.ocode{grid-area:code;font-family:var(--font-d);font-size:28px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.ocode{grid-area:code;font-family:var(--font-n);font-weight:700;font-size:26px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
 .items{font-weight:700;overflow-wrap:anywhere}
 .meta{font-size:13px;color:var(--muted)}
 .tag{display:inline-block;padding:1px 8px;border-radius:6px;background:var(--bg);font-weight:700;margin-right:6px;color:var(--ink)}
@@ -138,9 +156,9 @@ ul.olist{list-style:none;margin:8px 0 0;padding:0}
 .wband.w-c{--tc:var(--c);--tci:var(--c-ink)}
 .wband h2{font-family:var(--font-d);font-weight:400;font-size:30px;line-height:1.2}
 .wcount{text-align:right;font-weight:700;line-height:1.3}
-.wcount b{font-family:var(--font-d);font-weight:400;font-size:30px}
+.wcount b{font-family:var(--font-n);font-weight:700;font-size:30px}
 label.lbl{display:block;font-weight:700;margin-bottom:8px}
-.codein{width:100%;min-height:76px;text-align:center;font-family:var(--font-d);font-size:46px;letter-spacing:.3em;padding-left:.3em;border:2px solid var(--ink);border-radius:14px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
+.codein{width:100%;min-height:76px;text-align:center;font-family:var(--font-n);font-weight:700;font-size:42px;letter-spacing:.3em;padding-left:.3em;border:2px solid var(--ink);border-radius:14px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
 .codein::placeholder{color:var(--line)}
 .row{display:flex;gap:8px}
 .row .codein{min-height:56px;font-size:28px;letter-spacing:.2em}
@@ -151,6 +169,8 @@ label.lbl{display:block;font-weight:700;margin-bottom:8px}
 .res h3{font-size:19px;font-weight:900}
 .res p{font-size:14px}
 .rbig{font-family:var(--font-d);font-size:38px;line-height:1.2;color:var(--ok)}
+.row .btn{white-space:nowrap;flex:none}
+.row .codein{flex:1;min-width:0}
 .foot{margin-top:18px;text-align:center}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
   background:var(--btn);color:var(--btn-ink);padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;text-align:center}
@@ -165,10 +185,14 @@ body{margin:0}
     <span id="net" class="net">この端末のみ</span>
   </header>
   <nav id="tabs" aria-label="画面の切り替え">
-    <a class="tab" data-v="order" href="#order">注文</a>
-    <a class="tab" data-v="cashier" href="#cashier">会計</a>
-    <a class="tab tab-y" data-v="yaki" href="#yaki">焼きそば<small>窓口</small></a>
-    <a class="tab tab-c" data-v="curry" href="#curry">カレー<small>窓口</small></a>
+    <div class="grp g-cust"><div class="gcap">お客さん用</div>
+      <a class="tab t-order" data-v="order" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文</span></a></div>
+    <div class="grp g-staff"><div class="gcap">スタッフ用</div>
+      <div class="grp3">
+        <a class="tab t-cash" data-v="cashier" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 7.5l3 4.5 3-4.5M9 12h6M9 15h6M12 12v5"/></svg><span>会計</span></a>
+        <a class="tab tab-y" data-v="yaki" href="#yaki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>焼きそば</span><small>窓口</small></a>
+        <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
+      </div></div>
   </nav>
   <main id="main"></main>
 </div>
