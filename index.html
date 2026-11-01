@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>食券お試し版</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 1 column phone app. Top tabs switch between 注文 / 会計 / 焼きそば窓口 / カレー窓口.
+   Palette: ink navy on pale blue paper; 焼きそば = orange, カレー = blue, so each window is told apart by colour. */
+:root{
+  --bg:#EDF0F5; --surface:#FFFFFF; --ink:#18212F; --muted:#586377; --line:#D3D9E3;
+  --y:#D4531B; --y-ink:#FFFFFF; --y-soft:#FBE6DB;
+  --c:#1E5AA8; --c-ink:#FFFFFF; --c-soft:#DDE8F6;
+  --ok:#1D7A4B; --ok-soft:#DDF1E6; --warn:#8F5A00; --warn-soft:#FFF0CF; --bad:#B3261E; --bad-soft:#FBE0DD;
+  --btn:#18212F; --btn-ink:#FFFFFF; --focus:#1E5AA8;
+  --qr-bg:#FFFFFF; --qr-fg:#000000;
+  --font-d:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --font-b:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F141D; --surface:#182030; --ink:#E9EDF4; --muted:#9AA6BA; --line:#2B3548;
+    --y:#F0824F; --y-ink:#1B0E06; --y-soft:#3A2418;
+    --c:#6FA6EA; --c-ink:#08142A; --c-soft:#16294A;
+    --ok:#5CCB8F; --ok-soft:#133323; --warn:#F0BE5A; --warn-soft:#38290A; --bad:#FF8A80; --bad-soft:#3F1714;
+    --btn:#E9EDF4; --btn-ink:#0F141D; --focus:#6FA6EA; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F141D; --surface:#182030; --ink:#E9EDF4; --muted:#9AA6BA; --line:#2B3548;
+  --y:#F0824F; --y-ink:#1B0E06; --y-soft:#3A2418;
+  --c:#6FA6EA; --c-ink:#08142A; --c-soft:#16294A;
+  --ok:#5CCB8F; --ok-soft:#133323; --warn:#F0BE5A; --warn-soft:#38290A; --bad:#FF8A80; --bad-soft:#3F1714;
+  --btn:#E9EDF4; --btn-ink:#0F141D; --focus:#6FA6EA; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:16px;line-height:1.6;
+  padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:520px;margin:0 auto}
+h1,h2,h3,p{margin:0}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.seal{font-family:var(--font-d);background:var(--y);color:var(--y-ink);border-radius:6px;padding:2px 8px;font-size:15px;letter-spacing:.06em}
+h1{font-size:20px;font-weight:900;text-wrap:balance}
+.net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.net.shared{background:var(--ok-soft);color:var(--ok)}
+#tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:14px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:6px 2px;text-decoration:none;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:15px;line-height:1.25;text-align:center}
+.tab small{font-size:11px;font-weight:500;color:var(--muted)}
+.tab-y{border-bottom:4px solid var(--y)}
+.tab-c{border-bottom:4px solid var(--c)}
+.tab[aria-current="page"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.tab[aria-current="page"] small{color:inherit;opacity:.8}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.panel h2{font-size:18px;font-weight:900}
+.sub{color:var(--muted);font-size:14px}
+.muted{color:var(--muted);font-size:14px}
+
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.mname{display:flex;align-items:center;gap:12px;min-width:0}
+.mname b{display:block;font-size:18px}
+.mname small{color:var(--muted);font-size:14px}
+.sw{width:16px;height:16px;border-radius:4px;flex:none}
+.sw-y{background:var(--y)} .sw-c{background:var(--c)}
+.step{display:inline-flex;align-items:center;gap:10px}
+.step output{font-family:var(--font-d);font-size:24px;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+.sb{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font-size:22px;line-height:1;cursor:pointer}
+.sb:active{background:var(--bg)}
+
+fieldset{border:0;margin:14px 0 0;padding:0;min-width:0}
+legend{font-weight:700;font-size:14px;color:var(--muted);padding:0;margin-bottom:6px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-height:56px}
+.opt:has(input:checked){border-color:var(--ink);background:var(--bg)}
+.opt input{width:20px;height:20px;accent-color:var(--ink);flex:none}
+.opt b{display:block;line-height:1.3}
+.opt small{color:var(--muted);font-size:12px;line-height:1.3;display:block}
+.sumline{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px}
+.sumline strong{font-family:var(--font-d);font-size:28px;font-variant-numeric:tabular-nums}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 20px;border:0;border-radius:12px;background:var(--btn);color:var(--btn-ink);font-weight:900;font-size:17px;cursor:pointer}
+.btn.block{width:100%;margin-top:12px}
+.btn.sm{min-height:42px;font-size:15px;padding:0 14px}
+.btn.big{width:100%;min-height:64px;font-size:22px;margin-top:12px}
+.btn.alt{background:var(--surface);color:var(--ink);border:1.5px solid var(--ink)}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;min-height:44px;padding:0 6px;cursor:pointer;font-size:14px}
+
+.notice{padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.7;margin-top:12px}
+.notice.ok{background:var(--ok-soft);color:var(--ok)}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice b{font-family:var(--font-d);font-size:1.25em;letter-spacing:.08em;font-weight:400}
+
+.ohead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.code-big{font-family:var(--font-d);font-size:52px;line-height:1;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.wait{background:var(--warn-soft);color:var(--warn)}
+
+.ticket{--tc:var(--y);--tci:var(--y-ink);position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:16px}
+.ticket.t-c{--tc:var(--c);--tci:var(--c-ink)}
+.t-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;background:var(--tc);color:var(--tci);border-radius:11px 11px 0 0;font-family:var(--font-d);font-size:28px;line-height:1.2}
+.perf{height:0;border-top:2px dashed var(--line);position:relative;margin:0 16px}
+.perf::before,.perf::after{content:"";position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.perf::before{left:-27px}.perf::after{right:-27px}
+.t-body{display:grid;justify-items:center;gap:10px;padding:20px 16px 18px}
+.qr{position:relative;width:min(72vw,280px);aspect-ratio:1;background:var(--qr-bg);padding:12px;border-radius:8px;border:1px solid var(--line)}
+.qr svg{display:block;width:100%;height:100%}
+.qr.empty{display:grid;place-items:center;text-align:center;background:var(--bg);border:2px dashed var(--line);color:var(--muted);font-weight:700;font-size:15px;padding:16px}
+.used-mark{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 72%,transparent);border-radius:8px}
+.used-mark span{transform:rotate(-12deg);border:4px solid var(--bad);color:var(--bad);font-family:var(--font-d);font-size:26px;padding:4px 14px;border-radius:6px;background:var(--surface)}
+.t-code{font-family:var(--font-d);font-size:22px;letter-spacing:.14em;font-variant-numeric:tabular-nums}
+
+.stats{display:flex;gap:0;margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.stats>div{flex:1;min-width:0;padding:12px 8px;text-align:center}
+.stats>div+div{border-left:1px solid var(--line)}
+.stats b{display:block;font-family:var(--font-d);font-size:22px;font-weight:400;font-variant-numeric:tabular-nums}
+.stats span{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);min-height:42px;padding:0 16px;font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+ul.olist{list-style:none;margin:8px 0 0;padding:0}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"code act" "info info";gap:6px 12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.orow>div:nth-child(2){grid-area:info}
+.ocode{grid-area:code;font-family:var(--font-d);font-size:28px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.items{font-weight:700;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;background:var(--bg);font-weight:700;margin-right:6px;color:var(--ink)}
+.oact{grid-area:act;display:flex;flex-direction:column;align-items:flex-end}
+.oact .btn,.oact .pill,.oact .link{white-space:nowrap}
+.empty-state{text-align:center;color:var(--muted);padding:26px 8px;font-size:15px}
+
+.wband{--tc:var(--y);--tci:var(--y-ink);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:16px 18px;border-radius:14px;background:var(--tc);color:var(--tci)}
+.wband.w-c{--tc:var(--c);--tci:var(--c-ink)}
+.wband h2{font-family:var(--font-d);font-weight:400;font-size:30px;line-height:1.2}
+.wcount{text-align:right;font-weight:700;line-height:1.3}
+.wcount b{font-family:var(--font-d);font-weight:400;font-size:30px}
+label.lbl{display:block;font-weight:700;margin-bottom:8px}
+.codein{width:100%;min-height:76px;text-align:center;font-family:var(--font-d);font-size:46px;letter-spacing:.3em;padding-left:.3em;border:2px solid var(--ink);border-radius:14px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
+.codein::placeholder{color:var(--line)}
+.row{display:flex;gap:8px}
+.row .codein{min-height:56px;font-size:28px;letter-spacing:.2em}
+.res{margin-top:14px;padding:16px;border-radius:12px;border:2px solid var(--line)}
+.res.ok{background:var(--ok-soft);border-color:var(--ok)}
+.res.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.res.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.res h3{font-size:19px;font-weight:900}
+.res p{font-size:14px}
+.rbig{font-family:var(--font-d);font-size:38px;line-height:1.2;color:var(--ok)}
+.foot{margin-top:18px;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
+  background:var(--btn);color:var(--btn-ink);padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+body{margin:0}
+</style>
+</head><body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="seal">食券</span><h1>文化祭の食券</h1></div>
+    <span id="net" class="net">この端末のみ</span>
+  </header>
+  <nav id="tabs" aria-label="画面の切り替え">
+    <a class="tab" data-v="order" href="#order">注文</a>
+    <a class="tab" data-v="cashier" href="#cashier">会計</a>
+    <a class="tab tab-y" data-v="yaki" href="#yaki">焼きそば<small>窓口</small></a>
+    <a class="tab tab-c" data-v="curry" href="#curry">カレー<small>窓口</small></a>
+  </nav>
+  <main id="main"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(function(){
+  // 値段と1人あたりの上限は仮の値です。ここを書き換えるだけで全画面に反映されます。
+  var PRICE={y:500,c:500}, MAX=10;
+  var NAME={y:'焼きそば',c:'カレー'};
+  var KEY='bunkasai-shokken-orders', MINE='bunkasai-shokken-mine';
+  var orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
+  var cart={y:0,c:0,pay:'paypay'}, walk={y:0,c:0}, walkDone=null, current=null, filter='pending', lastDone=null;
+
+  function $(s){return document.querySelector(s)}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function yen(n){return n.toLocaleString('ja-JP')+'円'}
+  function total(o){return o.y*PRICE.y+o.c*PRICE.c}
+  function getView(){var v=location.hash.slice(1);return ['order','cashier','yaki','curry'].indexOf(v)>=0?v:'order'}
+
+  function norm(id,d){
+    if(!d||!/^\d{4}$/.test(id))return null;
+    var n=function(v){return Math.max(0,Math.min(MAX,Math.floor(+v||0)))}, u=d.used||{};
+    return {code:id,y:n(d.y),c:n(d.c),pay:d.pay==='cash'?'cash':'paypay',paid:!!d.paid,walkin:!!d.walkin,used:{y:!!u.y,c:!!u.c},at:+d.at||0};
+  }
+  try{var raw=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(raw).forEach(function(k){var o=norm(k,raw[k]);if(o)orders[k]=o})}catch(e){}
+  try{mine=JSON.parse(localStorage.getItem(MINE)||'[]').filter(function(c){return /^\d{4}$/.test(c)})}catch(e){mine=[]}
+  function saveMine(){try{localStorage.setItem(MINE,JSON.stringify(mine))}catch(e){}}
+
+  function newOrder(y,c,pay,paid,walkin){
+    var code,i=0;
+    do{code=String(1000+Math.floor(Math.random()*9000));i++}while(orders[code]&&i<60);
+    return {code:code,y:y,c:c,pay:pay,paid:paid,walkin:walkin,used:{y:false,c:false},at:Date.now()};
+  }
+  async function put(o){
+    orders[o.code]=o; render();
+    if(ordersCol){
+      try{await ordersCol.doc(o.code).set(o)}catch(e){toast('保存できませんでした。もう一度お試しください')}
+    }else{
+      try{localStorage.setItem(KEY,JSON.stringify(orders))}catch(e){}
+    }
+  }
+
+  var toastTimer=null;
+  function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},2400)}
+
+  function qrSvg(text){
+    if(typeof qrcode!=='function')return '';
+    var q=qrcode(0,'M');q.addData(text);q.make();
+    var n=q.getModuleCount(),m=2,d='',r,c,run;
+    for(r=0;r<n;r++){run=-1;for(c=0;c<=n;c++){var dark=c<n&&q.isDark(r,c);if(dark&&run<0)run=c;if(!dark&&run>=0){d+='M'+(run+m)+' '+(r+m)+'h'+(c-run)+'v1h-'+(c-run)+'z';run=-1}}}
+    var s=n+m*2;
+    return '<svg viewBox="0 0 '+s+' '+s+'" shape-rendering="crispEdges" role="img" aria-label="食券のQRコード"><rect width="'+s+'" height="'+s+'" fill="var(--qr-bg)"/><path d="'+d+'" fill="var(--qr-fg)"/></svg>';
+  }
+
+  /* ---------- 部品 ---------- */
+  function stepper(scope,k){
+    return '<div class="step"><button type="button" class="sb" data-act="step" data-scope="'+scope+'" data-k="'+k+'" data-d="-1" aria-label="'+NAME[k]+'を減らす">−</button>'+
+      '<output id="n-'+scope+'-'+k+'">0</output>'+
+      '<button type="button" class="sb" data-act="step" data-scope="'+scope+'" data-k="'+k+'" data-d="1" aria-label="'+NAME[k]+'を増やす">＋</button></div>';
+  }
+  function menuRow(scope,k){
+    return '<div class="mrow"><div class="mname"><span class="sw sw-'+k+'"></span><div><b>'+NAME[k]+'</b><small>'+yen(PRICE[k])+'</small></div></div>'+stepper(scope,k)+'</div>';
+  }
+  function notice(cls,html){return '<div class="notice '+cls+'">'+html+'</div>'}
+
+  function ticketHtml(o,k){
+    var used=o.used[k], body;
+    if(!o.paid){
+      body='<div class="qr empty">支払いが確認されると<br>ここにQRが出ます</div>';
+    }else{
+      body='<div class="qr">'+qrSvg('SK-'+o.code+'-'+k.toUpperCase())+(used?'<div class="used-mark"><span>受け渡し済</span></div>':'')+'</div>';
+    }
+    return '<article class="ticket t-'+k+'"><div class="t-head"><span>'+NAME[k]+'券</span><span>×'+o[k]+'</span></div><div class="perf"></div>'+
+      '<div class="t-body">'+body+'<div class="t-code">番号 '+o.code+'</div></div></article>';
+  }
+  function ticketsHtml(o){
+    var h='<div class="panel"><div class="ohead"><div><div class="sub">注文番号</div><div class="code-big">'+o.code+'</div></div>'+
+      '<span class="pill '+(o.paid?'ok':'wait')+'">'+(o.paid?'支払い確認済み':'支払い確認待ち')+'</span></div>';
+    if(!o.paid){
+      h+=notice('warn',o.pay==='paypay'
+        ? 'PayPayで<b>'+yen(total(o))+'</b>を支払い、会計係に番号を伝えてください。確認されるとQRが出ます。'
+        : '会計で<b>'+yen(total(o))+'</b>を現金で支払ってください。確認されるとQRが出ます。');
+    }else{
+      h+=notice('ok','窓口でQRを見せてください。画面のスクリーンショットを保存しておくと安心です。番号 <b>'+o.code+'</b> でも受け取れます。');
+    }
+    h+='</div>';
+    ['y','c'].forEach(function(k){if(o[k]>0)h+=ticketHtml(o,k)});
+    return h;
+  }
+
+  /* ---------- 注文画面 ---------- */
+  function mountOrder(){
+    $('#main').innerHTML=
+      '<div id="tickets"></div>'+
+      '<section class="panel"><h2>食券を注文する</h2><p class="sub">食数を選んで、支払い方法を決めてください。</p>'+
+      menuRow('cart','y')+menuRow('cart','c')+
+      '<fieldset><legend>支払い方法</legend><div class="opts">'+
+      '<label class="opt"><input type="radio" name="pay" value="paypay"'+(cart.pay==='paypay'?' checked':'')+'><span><b>PayPay</b><small>注文後に支払い</small></span></label>'+
+      '<label class="opt"><input type="radio" name="pay" value="cash"'+(cart.pay==='cash'?' checked':'')+'><span><b>現金</b><small>会計で支払い</small></span></label>'+
+      '</div></fieldset>'+
+      '<div class="sumline"><span>合計</span><strong id="sum">0円</strong></div>'+
+      '<button type="button" class="btn block" data-act="order">注文する</button></section>'+
+      '<section class="panel"><label class="lbl" for="openCode">注文番号で食券を開く</label>'+
+      '<div class="row"><input id="openCode" class="codein" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000"><button type="button" class="btn alt" data-act="open">開く</button></div>'+
+      '<div id="mine"></div></section>';
+  }
+  function updateOrder(){
+    ['y','c'].forEach(function(k){$('#n-cart-'+k).textContent=cart[k]});
+    $('#sum').textContent=yen(cart.y*PRICE.y+cart.c*PRICE.c);
+    var o=current&&orders[current];
+    $('#tickets').innerHTML=o?ticketsHtml(o):(current?'<div class="panel"><p class="muted">注文番号 '+esc(current)+' を探しています。見つからないときは番号を確認してください。</p></div>':'');
+    var m=mine.slice(-4).reverse();
+    $('#mine').innerHTML=m.length?'<p class="sub" style="margin-top:12px">この端末で注文した番号</p><div class="row" style="flex-wrap:wrap;margin-top:6px">'+
+      m.map(function(c){return '<button type="button" class="btn alt sm" data-act="show" data-code="'+c+'">'+c+'</button>'}).join('')+'</div>':'';
+  }
+  function placeOrder(){
+    if(cart.y+cart.c===0){toast('食数を選んでください');return}
+    var o=newOrder(cart.y,cart.c,cart.pay,false,false);
+    put(o);
+    mine.push(o.code);saveMine();current=o.code;cart.y=0;cart.c=0;update();
+    setTimeout(function(){var t=$('#tickets');if(t)t.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},60);
+  }
+  function openCode(code){
+    if(!/^\d{4}$/.test(code)){toast('4桁の番号を入力してください');return}
+    current=code;
+    if(!orders[code])toast('この番号の注文はまだ見つかりません');
+    else if(mine.indexOf(code)<0){mine.push(code);saveMine()}
+    update();
+    setTimeout(function(){var t=$('#tickets');if(t)t.scrollIntoView({block:'start'})},60);
+  }
+
+  /* ---------- 会計画面 ---------- */
+  function mountCashier(){
+    $('#main').innerHTML=
+      '<div class="stats" id="stats"></div>'+
+      '<section class="panel"><div class="toolbar"><h2>注文一覧</h2><div class="seg" role="group" aria-label="表示の絞り込み">'+
+      '<button type="button" data-act="filter" data-f="pending">未確認</button><button type="button" data-act="filter" data-f="all">すべて</button></div></div>'+
+      '<ul class="olist" id="olist"></ul></section>'+
+      '<section class="panel"><h2>当日売り</h2><p class="sub">その場で現金を受け取り、すぐ有効な食券を発行します。</p>'+
+      menuRow('walk','y')+menuRow('walk','c')+
+      '<div class="sumline"><span>合計（現金）</span><strong id="wsum">0円</strong></div>'+
+      '<button type="button" class="btn block" data-act="walk">発行する</button><div id="walkres"></div></section>'+
+      '<div class="foot"><button type="button" class="link" data-act="export" id="exp" hidden>記録を書き出す（CSV）</button></div>';
+  }
+  function updateCashier(){
+    var all=Object.keys(orders).map(function(k){return orders[k]});
+    var pend=all.filter(function(o){return !o.paid}), paid=all.filter(function(o){return o.paid});
+    var sales=paid.reduce(function(s,o){return s+total(o)},0);
+    $('#stats').innerHTML='<div><b>'+pend.length+'</b><span>未確認（件）</span></div><div><b>'+paid.length+'</b><span>確認済み（件）</span></div><div><b>'+sales.toLocaleString('ja-JP')+'</b><span>売上（円）</span></div>';
+    document.querySelectorAll('[data-act="filter"]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.f===filter))});
+    var list=filter==='pending'?pend.sort(function(a,b){return a.at-b.at}):all.sort(function(a,b){return b.at-a.at});
+    $('#olist').innerHTML=list.length?list.map(orderRow).join(''):
+      '<li class="empty-state">'+(filter==='pending'?'確認待ちの注文はありません。':'まだ注文がありません。注文画面から作るとここに並びます。')+'</li>';
+    ['y','c'].forEach(function(k){$('#n-walk-'+k).textContent=walk[k]});
+    $('#wsum').textContent=yen(walk.y*PRICE.y+walk.c*PRICE.c);
+    $('#walkres').innerHTML=walkDone?notice('ok','番号 <b>'+walkDone+'</b> を発行しました。お客さんに番号を伝えてください。スマホの「注文番号で食券を開く」から表示できます。'):'';
+    $('#exp').hidden=!dl;
+  }
+  function orderRow(o){
+    var items=[];if(o.y)items.push(NAME.y+'×'+o.y);if(o.c)items.push(NAME.c+'×'+o.c);
+    var act;
+    if(!o.paid)act='<button type="button" class="btn sm" data-act="pay" data-code="'+o.code+'">支払い確認</button>';
+    else if(o.used.y||o.used.c)act='<span class="pill ok">受け渡し中</span>';
+    else act='<span class="pill ok">確認済み</span><button type="button" class="link" data-act="unpay" data-code="'+o.code+'">取り消す</button>';
+    return '<li class="orow"><div class="ocode">'+o.code+'</div><div><div class="items">'+items.join('　')+'</div>'+
+      '<div class="meta"><span class="tag">'+(o.pay==='cash'?'現金':'PayPay')+'</span>'+yen(total(o))+(o.walkin?'　当日売り':'')+'</div></div>'+
+      '<div class="oact">'+act+'</div></li>';
+  }
+  function issueWalk(){
+    if(walk.y+walk.c===0){toast('食数を選んでください');return}
+    var o=newOrder(walk.y,walk.c,'cash',true,true);
+    put(o);walkDone=o.code;walk.y=0;walk.c=0;update();
+  }
+
+  /* ---------- 窓口画面 ---------- */
+  function winKey(){return getView()==='yaki'?'y':'c'}
+  function mountWindow(k){
+    $('#main').innerHTML=
+      '<section class="wband w-'+k+'"><h2>'+NAME[k]+'窓口</h2><div class="wcount"><b id="wDone">0</b> / <span id="wPaid">0</span> 食<br><small>受け渡し済み / 支払い済み</small></div></section>'+
+      '<section class="panel"><label class="lbl" for="wCode">食券の番号（4桁）</label>'+
+      '<input id="wCode" class="codein" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000"><div id="wResult" aria-live="polite"></div></section>'+
+      '<div class="foot"><button type="button" class="link" data-act="export" id="exp" hidden>記録を書き出す（CSV）</button></div>';
+  }
+  function msg(cls,title,text){return '<div class="res '+cls+'"><h3>'+title+'</h3><p>'+text+'</p></div>'}
+  function winResult(k,code){
+    if(!/^\d{4}$/.test(code))return '';
+    var o=orders[code];
+    if(!o)return msg('bad','見つかりません','この番号の注文はありません。番号を確認してください。');
+    if(!o[k])return msg('warn','この注文に'+NAME[k]+'はありません','もう一方の窓口に案内してください。');
+    if(!o.paid)return msg('warn','支払い未確認','会計で支払いを確認してもらってください。');
+    if(o.used[k])return msg('bad','受け渡し済み',NAME[k]+o[k]+'食はすでに渡しています。');
+    return '<div class="res ok"><div class="rbig">'+NAME[k]+' '+o[k]+'食</div><button type="button" class="btn big" data-act="hand" data-code="'+code+'">渡した</button></div>';
+  }
+  function updateWindow(k){
+    var done=0,paid=0;
+    Object.keys(orders).forEach(function(c){var o=orders[c];if(o.paid){paid+=o[k];if(o.used[k])done+=o[k]}});
+    $('#wDone').textContent=done;$('#wPaid').textContent=paid;
+    var undo='';
+    if(lastDone&&lastDone.k===k&&orders[lastDone.code]&&orders[lastDone.code].used[k])
+      undo='<div style="text-align:center;margin-top:8px"><button type="button" class="link" data-act="undo">直前の受け渡し（'+lastDone.code+'）を戻す</button></div>';
+    $('#wResult').innerHTML=winResult(k,$('#wCode').value)+undo;
+    $('#exp').hidden=!dl;
+  }
+  function hand(code,k){
+    var o=orders[code];if(!o||!o.paid||o.used[k])return;
+    var u={y:o.used.y,c:o.used.c};u[k]=true;
+    put(Object.assign({},o,{used:u}));
+    lastDone={code:code,k:k};toast(NAME[k]+o[k]+'食 渡しました');
+    var i=$('#wCode');i.value='';i.focus();update();
+  }
+  function undo(k){
+    if(!lastDone)return;var o=orders[lastDone.code];if(!o)return;
+    var u={y:o.used.y,c:o.used.c};u[lastDone.k]=false;
+    put(Object.assign({},o,{used:u}));
+    $('#wCode').value=lastDone.code;lastDone=null;toast('受け渡しを戻しました');update();
+  }
+
+  /* ---------- 共通 ---------- */
+  async function exportCsv(){
+    if(!dl)return;
+    var rows=[['番号','焼きそば','カレー','合計(円)','支払い方法','支払い確認','焼きそば受け渡し','カレー受け渡し','注文時刻']];
+    Object.keys(orders).map(function(k){return orders[k]}).sort(function(a,b){return a.at-b.at}).forEach(function(o){
+      rows.push([o.code,o.y,o.c,total(o),o.pay==='cash'?'現金':'PayPay',o.paid?'済':'未',o.used.y?'済':'',o.used.c?'済':'',o.at?new Date(o.at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'']);
+    });
+    var csv='﻿'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(',')}).join('\r\n');
+    try{await dl.save({filename:'shokken-records.csv',data:csv});toast('書き出しました')}
+    catch(e){if(!e||e.code!=='declined')toast('書き出せませんでした')}
+  }
+  function updateNet(){
+    var el=$('#net');
+    var t={local:'お試し版・この端末のみ',connecting:'接続中…',shared:'共有中',stale:'接続を待っています'}[net];
+    el.textContent=t;el.className='net'+(net==='shared'?' shared':'');
+  }
+  function mount(v){
+    mounted=v;
+    document.querySelectorAll('#tabs a').forEach(function(a){a.setAttribute('aria-current',a.dataset.v===v?'page':'false')});
+    if(v==='order')mountOrder();else if(v==='cashier')mountCashier();else mountWindow(winKey());
+    update();
+  }
+  function update(){
+    updateNet();
+    if(mounted==='order')updateOrder();else if(mounted==='cashier')updateCashier();else updateWindow(winKey());
+  }
+  function render(){var v=getView();if(v!==mounted)mount(v);else update()}
+
+  var main=$('#main');
+  main.addEventListener('click',function(e){
+    var b=e.target.closest('[data-act]');if(!b)return;var a=b.dataset.act,k=winKey();
+    if(a==='step'){var s=b.dataset.scope==='cart'?cart:walk,kk=b.dataset.k;s[kk]=Math.max(0,Math.min(MAX,s[kk]+(+b.dataset.d)));if(b.dataset.scope==='walk')walkDone=null;update()}
+    else if(a==='order')placeOrder();
+    else if(a==='open')openCode($('#openCode').value);
+    else if(a==='show')openCode(b.dataset.code);
+    else if(a==='filter'){filter=b.dataset.f;update()}
+    else if(a==='pay'){var o=orders[b.dataset.code];if(o)put(Object.assign({},o,{paid:true}))}
+    else if(a==='unpay'){var o2=orders[b.dataset.code];if(o2&&!o2.used.y&&!o2.used.c)put(Object.assign({},o2,{paid:false}))}
+    else if(a==='walk')issueWalk();
+    else if(a==='hand')hand(b.dataset.code,k);
+    else if(a==='undo')undo(k);
+    else if(a==='export')exportCsv();
+  });
+  main.addEventListener('change',function(e){if(e.target.name==='pay'){cart.pay=e.target.value}});
+  main.addEventListener('input',function(e){
+    if(e.target.id==='wCode'||e.target.id==='openCode'){e.target.value=e.target.value.replace(/\D/g,'');if(e.target.id==='wCode')update()}
+  });
+  main.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='openCode')openCode(e.target.value)});
+  window.addEventListener('hashchange',render);
+
+  render();
+
+  (async function(){
+    if(!(window.claude&&window.claude.use))return;
+    try{dl=await window.claude.use('downloads')}catch(e){}
+    var db=null;try{db=await window.claude.use('db')}catch(e){}
+    if(db){
+      ordersCol=db.collection('orders');orders={};net='connecting';
+      var t=setTimeout(function(){if(net==='connecting'){net='stale';update()}},10000);
+      ordersCol.onSnapshot(function(snap){
+        var next={};snap.docs.forEach(function(d){var o=norm(d.id,d.data());if(o)next[o.code]=o});
+        orders=next;if(!snap.metadata.fromCache){clearTimeout(t);net='shared'}render();
+      },function(){net='stale';update()});
+    }
+    render();
+  })();
+})();
+</script>
+
+</body></html>
