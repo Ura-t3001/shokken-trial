@@ -34,7 +34,7 @@
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:16px;line-height:1.6;
-  padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  padding-block:16px 110px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .app{max-width:520px;margin:0 auto}
 h1,h2,h3,p{margin:0}
 button,input{font:inherit;color:inherit}
@@ -46,7 +46,7 @@ button,input{font:inherit;color:inherit}
 h1{font-size:20px;font-weight:900;text-wrap:balance}
 .net{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
 .net.shared{background:var(--ok-soft);color:var(--ok)}
-#tabs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3fr);gap:10px;margin-top:14px}
+#tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:14px}
 .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;padding:6px 2px;text-decoration:none;color:var(--ink);
   background:var(--surface);border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:15px;line-height:1.25;text-align:center}
 .tab small{font-size:11px;font-weight:500;color:var(--muted)}
@@ -55,13 +55,8 @@ h1{font-size:20px;font-weight:900;text-wrap:balance}
 .tab[aria-current="page"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
 .tab[aria-current="page"] small{color:inherit;opacity:.8}
 
-.grp{display:flex;flex-direction:column;gap:4px;min-width:0}
-.gcap{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-align:center}
-.grp3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.g-staff{border-left:2px dashed var(--line);padding-left:10px}
 .tab{min-height:68px;gap:3px}
 .tab svg{width:22px;height:22px;flex:none}
-.t-order{border-bottom:4px solid var(--ink)}
 .t-cash{border-bottom:4px solid var(--ok)}
 .t-cash svg{color:var(--ok)}
 .tab-y svg{color:var(--y)}
@@ -70,6 +65,11 @@ h1{font-size:20px;font-weight:900;text-wrap:balance}
 .t-cash[aria-current="page"]{background:var(--ok);border-color:var(--ok);color:var(--surface)}
 .tab-y[aria-current="page"]{background:var(--y);border-color:var(--y);color:var(--y-ink)}
 .tab-c[aria-current="page"]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
+#bottom{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;gap:10px;background:var(--surface);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;border-radius:12px;text-decoration:none;color:var(--muted);font-weight:700;font-size:15px;line-height:1.2;background:var(--bg)}
+.bt small{font-size:11px;font-weight:500}
+.bt svg{width:24px;height:24px}
+.bt[aria-current="page"]{background:var(--btn);color:var(--btn-ink)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
 .panel h2{font-size:18px;font-weight:900}
 .sub{color:var(--muted);font-size:14px}
@@ -172,11 +172,12 @@ label.lbl{display:block;font-weight:700;margin-bottom:8px}
 .row .btn{white-space:nowrap;flex:none}
 .row .codein{flex:1;min-width:0}
 .foot{margin-top:18px;text-align:center}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
   background:var(--btn);color:var(--btn-ink);padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 body{margin:0}
+[hidden]{display:none!important}
 </style>
 </head><body>
 <div class="app">
@@ -184,17 +185,16 @@ body{margin:0}
     <div class="brand"><span class="seal">食券</span><h1>文化祭の食券</h1></div>
     <span id="net" class="net">この端末のみ</span>
   </header>
-  <nav id="tabs" aria-label="画面の切り替え">
-    <div class="grp g-cust"><div class="gcap">お客さん用</div>
-      <a class="tab t-order" data-v="order" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文</span></a></div>
-    <div class="grp g-staff"><div class="gcap">スタッフ用</div>
-      <div class="grp3">
-        <a class="tab t-cash" data-v="cashier" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 7.5l3 4.5 3-4.5M9 12h6M9 15h6M12 12v5"/></svg><span>会計</span></a>
-        <a class="tab tab-y" data-v="yaki" href="#yaki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>焼きそば</span><small>窓口</small></a>
-        <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
-      </div></div>
+  <nav id="tabs" aria-label="スタッフ画面の切り替え" hidden>
+    <a class="tab t-cash" data-v="cashier" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 7.5l3 4.5 3-4.5M9 12h6M9 15h6M12 12v5"/></svg><span>会計</span></a>
+    <a class="tab tab-y" data-v="yaki" href="#yaki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>焼きそば</span><small>窓口</small></a>
+    <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
+  <nav id="bottom" aria-label="画面の切り替え">
+    <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
+    <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
+  </nav>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -205,7 +205,7 @@ body{margin:0}
   var PRICE={y:500,c:500}, MAX=10;
   var NAME={y:'焼きそば',c:'カレー'};
   var KEY='bunkasai-shokken-orders', MINE='bunkasai-shokken-mine';
-  var orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
+  var lastStaff='cashier', orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
   var cart={y:0,c:0,pay:'paypay'}, walk={y:0,c:0}, walkDone=null, current=null, filter='pending', lastDone=null;
 
   function $(s){return document.querySelector(s)}
@@ -430,7 +430,11 @@ body{margin:0}
   }
   function mount(v){
     mounted=v;
+    var staff=v!=='order';if(staff)lastStaff=v;
+    $('#tabs').hidden=!staff;
     document.querySelectorAll('#tabs a').forEach(function(a){a.setAttribute('aria-current',a.dataset.v===v?'page':'false')});
+    document.querySelectorAll('#bottom a').forEach(function(a){a.setAttribute('aria-current',a.dataset.g===(staff?'staff':'cust')?'page':'false')});
+    $('#bottom [data-g="staff"]').setAttribute('href','#'+lastStaff);
     if(v==='order')mountOrder();else if(v==='cashier')mountCashier();else mountWindow(winKey());
     update();
   }
