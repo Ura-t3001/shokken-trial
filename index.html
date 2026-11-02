@@ -207,8 +207,8 @@ body{margin:0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (function(){
-  // 値段と1人あたりの上限は仮の値です。ここを書き換えるだけで全画面に反映されます。
-  var PRICE={y:500,c:500}, MAX=10;
+  // 値段（次年度見込み: 焼きそば350円・カレー300円）と1人あたりの上限は仮の値です。ここを書き換えるだけで全画面に反映されます。
+  var PRICE={y:350,c:300}, MAX=10;
   var NAME={y:'焼きそば',c:'カレー'};
   var KEY='bunkasai-shokken-orders', MINE='bunkasai-shokken-mine';
   var lastStaff='cashier', orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
