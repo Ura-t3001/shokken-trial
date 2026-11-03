@@ -208,7 +208,7 @@ body{margin:0}
     <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
-  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.2.0</span><span>(2026-11-03ビルド)</span></footer>
+  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.3.0</span><span>(2026-11-03ビルド)</span></footer>
   <nav id="bottom" aria-label="画面の切り替え">
     <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
     <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
@@ -222,9 +222,13 @@ body{margin:0}
   // 値段（次年度見込み: 焼きそば350円・カレー300円）と1人あたりの上限は仮の値です。ここを書き換えるだけで全画面に反映されます。
   var PRICE={y:350,c:300}, MAX=10;
   var NAME={y:'焼きそば',c:'カレー'};
+  // 注文者の種類。増減はここだけ（id は保存される値なので、いちど使ったら変えない）。
+  var KINDS=[{id:'student',label:'生徒'},{id:'school',label:'学校関係者'},{id:'parent',label:'保護者'},{id:'local',label:'地元関係者'},{id:'other',label:'その他来校者'}];
+  function kindLabel(id){for(var i=0;i<KINDS.length;i++)if(KINDS[i].id===id)return KINDS[i].label;return '未選択'}
+  function validKind(id){return KINDS.some(function(k){return k.id===id})?id:''}
   var KEY='bunkasai-shokken-orders', MINE='bunkasai-shokken-mine';
   var lastStaff='cashier', orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
-  var editing=null, cart={y:0,c:0,pay:'paypay'}, walk={y:0,c:0}, walkDone=null, current=null, filter='pending', lastDone=null;
+  var editing=null, cart={y:0,c:0,pay:'paypay',kind:''}, walk={y:0,c:0}, walkDone=null, current=null, filter='pending', lastDone=null;
 
   function $(s){return document.querySelector(s)}
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -237,16 +241,16 @@ body{margin:0}
   function norm(id,d){
     if(!d||!/^\d{4}$/.test(id))return null;
     var n=function(v){return Math.max(0,Math.min(MAX,Math.floor(+v||0)))}, u=d.used||{};
-    return {code:id,y:n(d.y),c:n(d.c),pay:d.pay==='cash'?'cash':'paypay',paid:!!d.paid,walkin:!!d.walkin,cancelled:!!d.cancelled,void:{y:!!(d.void&&d.void.y),c:!!(d.void&&d.void.c)},used:{y:!!u.y,c:!!u.c},at:+d.at||0};
+    return {code:id,y:n(d.y),c:n(d.c),pay:d.pay==='cash'?'cash':'paypay',paid:!!d.paid,kind:validKind(d.kind),walkin:!!d.walkin,cancelled:!!d.cancelled,void:{y:!!(d.void&&d.void.y),c:!!(d.void&&d.void.c)},used:{y:!!u.y,c:!!u.c},at:+d.at||0};
   }
   try{var raw=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(raw).forEach(function(k){var o=norm(k,raw[k]);if(o)orders[k]=o})}catch(e){}
   try{mine=JSON.parse(localStorage.getItem(MINE)||'[]').filter(function(c){return /^\d{4}$/.test(c)})}catch(e){mine=[]}
   function saveMine(){try{localStorage.setItem(MINE,JSON.stringify(mine))}catch(e){}}
 
-  function newOrder(y,c,pay,paid,walkin){
+  function newOrder(y,c,pay,paid,walkin,kind){
     var code,i=0;
     do{code=String(1000+Math.floor(Math.random()*9000));i++}while(orders[code]&&i<60);
-    return {code:code,y:y,c:c,pay:pay,paid:paid,walkin:walkin,cancelled:false,void:{y:false,c:false},used:{y:false,c:false},at:Date.now()};
+    return {code:code,y:y,c:c,pay:pay,paid:paid,walkin:walkin,kind:kind||'',cancelled:false,void:{y:false,c:false},used:{y:false,c:false},at:Date.now()};
   }
   async function put(o){
     orders[o.code]=o; render();
@@ -324,6 +328,9 @@ body{margin:0}
       '<div id="tickets"></div>'+
       '<section class="panel"><h2 id="ohead">食券を注文する</h2><p class="sub" id="osub">食数を選んで、支払い方法を決めてください。</p>'+
       menuRow('cart','y')+menuRow('cart','c')+
+      '<fieldset><legend>注文者の種類（必ず選んでください）</legend><div class="opts">'+
+      KINDS.map(function(k){return '<label class="opt"><input type="radio" name="kind" value="'+k.id+'"'+(cart.kind===k.id?' checked':'')+'><span><b>'+k.label+'</b></span></label>'}).join('')+
+      '</div><p class="sub" style="margin-top:6px">人数の集計のためだけに使います。名前などは聞きません。</p></fieldset>'+
       '<fieldset><legend>支払い方法</legend><div class="opts">'+
       '<label class="opt"><input type="radio" name="pay" value="paypay"'+(cart.pay==='paypay'?' checked':'')+'><span><b>PayPay</b><small>注文後に支払い</small></span></label>'+
       '<label class="opt"><input type="radio" name="pay" value="cash"'+(cart.pay==='cash'?' checked':'')+'><span><b>現金</b><small>会計で支払い</small></span></label>'+
@@ -343,6 +350,7 @@ body{margin:0}
     $('#obtn').textContent=editing?'変更を保存':'注文する';
     $('#oend').hidden=!editing;
     document.querySelectorAll('input[name="pay"]').forEach(function(i){i.checked=i.value===cart.pay});
+    document.querySelectorAll('input[name="kind"]').forEach(function(i){i.checked=i.value===cart.kind});
     var o=current&&orders[current];
     $('#tickets').innerHTML=o?ticketsHtml(o):(current?'<div class="panel"><p class="muted">注文番号 '+esc(current)+' を探しています。見つからないときは番号を確認してください。</p></div>':'');
     var m=mine.slice(-4).reverse();
@@ -351,20 +359,21 @@ body{margin:0}
   }
   function startEdit(code){
     var o=orders[code];if(!o||o.paid||o.cancelled){toast('この注文はもう変更できません');update();return}
-    editing=code;cart.y=o.y;cart.c=o.c;cart.pay=o.pay;update();
+    editing=code;cart.y=o.y;cart.c=o.c;cart.pay=o.pay;cart.kind=o.kind;update();
     setTimeout(function(){var h=$('#ohead');if(h)h.scrollIntoView({block:'start'})},60);
   }
-  function endEdit(){editing=null;cart.y=0;cart.c=0;update()}
+  function endEdit(){editing=null;cart.y=0;cart.c=0;cart.kind='';update()}
   function saveEdit(){
     var o=orders[editing];
     if(!o||o.paid||o.cancelled){toast('支払いが確認されたため、変更できません。会計に申し出てください');editing=null;update();return}
     if(cart.y+cart.c===0){toast('食数が0です。やめる場合は「注文を取り消す」を押してください');return}
-    if(cart.y===o.y&&cart.c===o.c&&cart.pay===o.pay){toast('変更がありません');return}
-    var n=Object.assign({},o,{y:cart.y,c:cart.c,pay:cart.pay}),code=o.code;
-    ask('この内容に変更しますか？','番号 <b>'+code+'</b>（変わりません）<br>変更前：'+itemsText(o)+'／'+yen(total(o))+'<br>変更後：'+itemsText(n)+'／'+yen(total(n))+'（'+(n.pay==='cash'?'現金':'PayPay')+'）','変更する',false,function(){
+    if(!cart.kind){toast('注文者の種類を選んでください');return}
+    if(cart.y===o.y&&cart.c===o.c&&cart.pay===o.pay&&cart.kind===o.kind){toast('変更がありません');return}
+    var n=Object.assign({},o,{y:cart.y,c:cart.c,pay:cart.pay,kind:cart.kind}),code=o.code;
+    ask('この内容に変更しますか？','番号 <b>'+code+'</b>（変わりません）<br>変更前：'+itemsText(o)+'／'+yen(total(o))+'／'+kindLabel(o.kind)+'<br>変更後：'+itemsText(n)+'／'+yen(total(n))+'（'+(n.pay==='cash'?'現金':'PayPay')+'）／'+kindLabel(n.kind),'変更する',false,function(){
       var cur=orders[code];
       if(!cur||cur.paid||cur.cancelled){toast('支払いが確認されたため、変更できません。会計に申し出てください');editing=null;update();return}
-      put(Object.assign({},cur,{y:n.y,c:n.c,pay:n.pay}));editing=null;cart.y=0;cart.c=0;current=code;update();toast('注文を変更しました');
+      put(Object.assign({},cur,{y:n.y,c:n.c,pay:n.pay,kind:n.kind}));editing=null;cart.y=0;cart.c=0;cart.kind='';current=code;update();toast('注文を変更しました');
     });
   }
   function cancelOrder(code){
@@ -372,7 +381,7 @@ body{margin:0}
     ask('注文を取り消しますか？','番号 <b>'+code+'</b>　'+itemsText(o)+'／'+yen(total(o))+'<br>取り消すと食券は使えなくなります。','取り消す',true,function(){
       var cur=orders[code];
       if(!cur||cur.paid||cur.cancelled){toast('支払いが確認されたため、取り消せません。会計に申し出てください');update();return}
-      put(Object.assign({},cur,{cancelled:true}));if(editing===code){editing=null;cart.y=0;cart.c=0}update();toast('注文を取り消しました');
+      put(Object.assign({},cur,{cancelled:true}));if(editing===code){editing=null;cart.y=0;cart.c=0;cart.kind=''}update();toast('注文を取り消しました');
     });
   }
   function voidUnused(code){
@@ -395,9 +404,10 @@ body{margin:0}
   function placeOrder(){
     if(editing){saveEdit();return}
     if(cart.y+cart.c===0){toast('食数を選んでください');return}
-    var o=newOrder(cart.y,cart.c,cart.pay,false,false);
+    if(!cart.kind){toast('注文者の種類を選んでください');return}
+    var o=newOrder(cart.y,cart.c,cart.pay,false,false,cart.kind);
     put(o);
-    mine.push(o.code);saveMine();current=o.code;cart.y=0;cart.c=0;update();
+    mine.push(o.code);saveMine();current=o.code;cart.y=0;cart.c=0;cart.kind='';update();
     setTimeout(function(){var t=$('#tickets');if(t)t.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},60);
   }
   function openCode(code){
@@ -416,6 +426,7 @@ body{margin:0}
       '<section class="panel"><div class="toolbar"><h2>注文一覧</h2><div class="seg" role="group" aria-label="表示の絞り込み">'+
       '<button type="button" data-act="filter" data-f="pending">未確認</button><button type="button" data-act="filter" data-f="all">すべて</button></div></div>'+
       '<ul class="olist" id="olist"></ul></section>'+
+      '<section class="panel"><h2>注文者の種類別</h2><p class="sub">取り消しを除いた件数と、支払い確認済みの売上です。</p><div id="kinds"></div></section>'+
       '<section class="panel"><h2>当日売り</h2><p class="sub">その場で現金を受け取り、すぐ有効な食券を発行します。</p>'+
       menuRow('walk','y')+menuRow('walk','c')+
       '<div class="sumline"><span>合計（現金）</span><strong id="wsum">0円</strong></div>'+
@@ -428,6 +439,12 @@ body{margin:0}
     var pend=all.filter(function(o){return !o.paid}), paid=all.filter(function(o){return o.paid});
     var sales=paid.reduce(function(s,o){return s+total(o)},0);
     $('#stats').innerHTML='<div><b>'+pend.length+'</b><span>未確認（件）</span></div><div><b>'+paid.length+'</b><span>確認済み（件）</span></div><div><b>'+sales.toLocaleString('ja-JP')+'</b><span>売上（円）</span></div>';
+    var rows=KINDS.map(function(k){return {l:k.label,id:k.id}}).concat([{l:'未選択（当日売りなど）',id:''}]).map(function(k){
+      var os=all.filter(function(o){return o.kind===k.id});
+      return {l:k.l,n:os.length,s:os.filter(function(o){return o.paid}).reduce(function(a,o){return a+total(o)},0),hide:!k.id&&!os.length};
+    }).filter(function(x){return !x.hide});
+    $('#kinds').innerHTML='<table style="width:100%;border-collapse:collapse;font-size:15px"><thead><tr class="meta"><th style="text-align:left;font-weight:500">種類</th><th style="text-align:right;font-weight:500">件数</th><th style="text-align:right;font-weight:500">売上</th></tr></thead><tbody>'+
+      rows.map(function(x){return '<tr style="border-top:1px solid var(--line)"><td style="padding:8px 0">'+x.l+'</td><td style="text-align:right;font-family:var(--font-n)">'+x.n+'</td><td style="text-align:right;font-family:var(--font-n)">'+yen(x.s)+'</td></tr>'}).join('')+'</tbody></table>';
     document.querySelectorAll('[data-act="filter"]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.f===filter))});
     var list=filter==='pending'?pend.sort(function(a,b){return a.at-b.at}):every.sort(function(a,b){return b.at-a.at});
     $('#olist').innerHTML=list.length?list.map(orderRow).join(''):
@@ -450,7 +467,7 @@ body{margin:0}
       if(!any)act+='<button type="button" class="link" data-act="unpay" data-code="'+o.code+'">確認を戻す</button>';
     }
     return '<li class="orow'+(o.cancelled?' gone':'')+'"><div class="ocode">'+o.code+'</div><div><div class="items">'+items.join('　')+'</div>'+
-      '<div class="meta"><span class="tag">'+(o.pay==='cash'?'現金':'PayPay')+'</span>'+yen(total(o))+(o.walkin?'　当日売り':'')+'</div></div>'+
+      '<div class="meta"><span class="tag">'+(o.pay==='cash'?'現金':'PayPay')+'</span><span class="tag">'+kindLabel(o.kind)+'</span>'+yen(total(o))+(o.walkin?'　当日売り':'')+'</div></div>'+
       '<div class="oact">'+act+'</div></li>';
   }
   function issueWalk(){
@@ -507,9 +524,9 @@ body{margin:0}
   /* ---------- 共通 ---------- */
   async function exportCsv(){
     if(!dl)return;
-    var rows=[['番号','焼きそば','カレー','合計(円)','支払い方法','支払い確認','焼きそば受け渡し','カレー受け渡し','注文時刻']];
+    var rows=[['番号','焼きそば','カレー','合計(円)','支払い方法','注文者の種類','支払い確認','焼きそば受け渡し','カレー受け渡し','注文時刻']];
     Object.keys(orders).map(function(k){return orders[k]}).sort(function(a,b){return a.at-b.at}).forEach(function(o){
-      rows.push([o.code,o.y,o.c,total(o),o.pay==='cash'?'現金':'PayPay',o.cancelled?'取消':o.paid?'済':'未',o.used.y?'済':'',o.used.c?'済':'',o.at?new Date(o.at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'']);
+      rows.push([o.code,o.y,o.c,total(o),o.pay==='cash'?'現金':'PayPay',kindLabel(o.kind),o.cancelled?'取消':o.paid?'済':'未',o.used.y?'済':'',o.used.c?'済':'',o.at?new Date(o.at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'']);
     });
     var csv='﻿'+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(',')}).join('\r\n');
     try{await dl.save({filename:'shokken-records.csv',data:csv});toast('書き出しました')}
@@ -555,7 +572,7 @@ body{margin:0}
     else if(a==='undo')undo(k);
     else if(a==='export')exportCsv();
   });
-  main.addEventListener('change',function(e){if(e.target.name==='pay'){cart.pay=e.target.value}});
+  main.addEventListener('change',function(e){if(e.target.name==='pay'){cart.pay=e.target.value}else if(e.target.name==='kind'){cart.kind=e.target.value}});
   main.addEventListener('input',function(e){
     if(e.target.id==='wCode'||e.target.id==='openCode'){e.target.value=e.target.value.replace(/\D/g,'');if(e.target.id==='wCode')update()}
   });
