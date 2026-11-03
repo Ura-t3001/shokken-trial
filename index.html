@@ -208,7 +208,7 @@ body{margin:0}
     <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
-  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.3.3</span><span>(2026-11-03ビルド)</span></footer>
+  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.4.0</span><span>(2026-11-03ビルド)</span></footer>
   <nav id="bottom" aria-label="画面の切り替え">
     <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
     <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
@@ -226,6 +226,9 @@ body{margin:0}
   var KINDS=[{id:'student',label:'生徒'},{id:'school',label:'学校関係者'},{id:'parent',label:'保護者'},{id:'local',label:'地元関係者'},{id:'other',label:'その他来校者'}];
   function kindLabel(id){for(var i=0;i<KINDS.length;i++)if(KINDS[i].id===id)return KINDS[i].label;return '未選択'}
   function validKind(id){return KINDS.some(function(k){return k.id===id})?id:''}
+  // 注文者が自分で修正・取り消しできる期限（開催の約1週間前。仮の値。確認事項で決まったら直す）。この日の終わり（日本時間）まで。
+  var CHANGE_DEADLINE='2027-10-23';
+  function pastDeadline(){return Date.now()>new Date(CHANGE_DEADLINE+'T23:59:59+09:00').getTime()}
   var KEY='bunkasai-shokken-orders', MINE='bunkasai-shokken-mine';
   var lastStaff='cashier', orders={}, mine=[], ordersCol=null, dl=null, net='local', mounted=null;
   var editing=null, cart={y:0,c:0,pay:'cash',kind:''}, walk={y:0,c:0}, walkDone=null, current=null, filter='pending', lastDone=null;
@@ -305,14 +308,16 @@ body{margin:0}
   }
   function ticketsHtml(o){
     if(o.cancelled)return '<div class="panel"><div class="ohead"><div><div class="sub">注文番号</div><div class="code-big">'+o.code+'</div></div><span class="pill bad">取り消し済み</span></div>'+
-      notice('bad','この注文は取り消されました。食券は使えません。')+'</div>';
+      notice('bad','この注文は取り消されました。食券は使えません。')+
+      '<button type="button" class="btn alt block" style="margin-top:12px" data-act="newOrder">新しく注文する</button></div>';
     var h='<div class="panel"><div class="ohead"><div><div class="sub">注文番号</div><div class="code-big">'+o.code+'</div></div>'+
       '<span class="pill '+(o.paid?'ok':'wait')+'">'+(o.paid?'支払い確認済み':'支払い確認待ち')+'</span></div>';
     if(!o.paid){
       h+=notice('warn',o.pay==='paypay'
         ? 'PayPayで<b>'+yen(total(o))+'</b>を支払い、会計係に番号を伝えてください。確認されるとQRが出ます。'
         : '会計で<b>'+yen(total(o))+'</b>を現金で支払ってください。確認されるとQRが出ます。');
-      h+='<div class="row" style="margin-top:12px"><button type="button" class="btn alt half" data-act="edit" data-code="'+o.code+'">注文を修正する</button><button type="button" class="btn danger half" data-act="cancel" data-code="'+o.code+'">注文を取り消す</button></div><p class="sub" style="margin-top:6px">支払いが確認される前なら、番号はそのままで変更・取り消しできます。</p>';
+      if(pastDeadline())h+=notice('warn','変更・取り消しの受付は終わりました。変更は会計に申し出てください。');
+      else h+='<div class="row" style="margin-top:12px"><button type="button" class="btn alt half" data-act="edit" data-code="'+o.code+'">注文を修正する</button><button type="button" class="btn danger half" data-act="cancel" data-code="'+o.code+'">注文を取り消す</button></div><p class="sub" style="margin-top:6px">支払いが確認される前なら、番号はそのままで変更・取り消しできます（期限: '+CHANGE_DEADLINE.replace(/-0?/g,function(m,i){return i===4?'年':'月'})+'日まで）。</p>';
     }else{
       h+=notice('ok','窓口でQRを見せてください。画面のスクリーンショットを保存しておくと安心です。番号 <b>'+o.code+'</b> でも受け取れます。')+
         '<p class="sub" style="margin-top:8px">支払い確認後の変更・取り消しは、会計に申し出てください。</p>';
@@ -326,7 +331,7 @@ body{margin:0}
   function mountOrder(){
     $('#main').innerHTML=
       '<div id="tickets"></div>'+
-      '<section class="panel"><h2 id="ohead">食券を注文する</h2><p class="sub" id="osub">食数を選んで、支払い方法を決めてください。</p>'+
+      '<section class="panel" id="oform"><h2 id="ohead">食券を注文する</h2><p class="sub" id="osub">食数を選んで、支払い方法を決めてください。</p>'+
       menuRow('cart','y')+menuRow('cart','c')+
       '<fieldset><legend>注文者の種類（必ず選んでください）</legend><div class="opts">'+
       KINDS.map(function(k){return '<label class="opt"><input type="radio" name="kind" value="'+k.id+'"'+(cart.kind===k.id?' checked':'')+'><span><b>'+k.label+'</b></span></label>'}).join('')+
@@ -352,36 +357,45 @@ body{margin:0}
     document.querySelectorAll('input[name="pay"]').forEach(function(i){i.checked=i.value===cart.pay});
     document.querySelectorAll('input[name="kind"]').forEach(function(i){i.checked=i.value===cart.kind});
     var o=current&&orders[current];
+    $('#oform').style.display=(o&&o.cancelled)?'none':'';
     $('#tickets').innerHTML=o?ticketsHtml(o):(current?'<div class="panel"><p class="muted">注文番号 '+esc(current)+' を探しています。見つからないときは番号を確認してください。</p></div>':'');
     var m=mine.slice(-4).reverse();
     $('#mine').innerHTML=m.length?'<p class="sub" style="margin-top:12px">この端末で注文した番号</p><div class="row" style="flex-wrap:wrap;margin-top:6px">'+
       m.map(function(c){return '<button type="button" class="btn alt sm" data-act="show" data-code="'+c+'">'+c+'</button>'}).join('')+'</div>':'';
   }
   function startEdit(code){
-    var o=orders[code];if(!o||o.paid||o.cancelled){toast('この注文はもう変更できません');update();return}
+    var o=orders[code];if(!o||o.paid||o.cancelled||pastDeadline()){toast('この注文はもう変更できません。会計に申し出てください');update();return}
     editing=code;cart.y=o.y;cart.c=o.c;cart.pay=o.pay;cart.kind=o.kind;update();
     setTimeout(function(){var h=$('#ohead');if(h)h.scrollIntoView({block:'start'})},60);
   }
   function endEdit(){editing=null;cart.y=0;cart.c=0;cart.kind='';update()}
   function saveEdit(){
     var o=orders[editing];
-    if(!o||o.paid||o.cancelled){toast('支払いが確認されたため、変更できません。会計に申し出てください');editing=null;update();return}
+    if(!o||o.paid||o.cancelled||pastDeadline()){toast('変更できません。会計に申し出てください');editing=null;update();return}
     if(cart.y+cart.c===0){toast('食数が0です。やめる場合は「注文を取り消す」を押してください');return}
     if(!cart.kind){toast('注文者の種類を選んでください');return}
     if(cart.y===o.y&&cart.c===o.c&&cart.pay===o.pay&&cart.kind===o.kind){toast('変更がありません');return}
     var n=Object.assign({},o,{y:cart.y,c:cart.c,pay:cart.pay,kind:cart.kind}),code=o.code;
     ask('この内容に変更しますか？','番号 <b>'+code+'</b>（変わりません）<br>変更前：'+itemsText(o)+'／'+yen(total(o))+'／'+kindLabel(o.kind)+'<br>変更後：'+itemsText(n)+'／'+yen(total(n))+'（'+(n.pay==='cash'?'現金':'PayPay')+'）／'+kindLabel(n.kind),'変更する',false,function(){
       var cur=orders[code];
-      if(!cur||cur.paid||cur.cancelled){toast('支払いが確認されたため、変更できません。会計に申し出てください');editing=null;update();return}
+      if(!cur||cur.paid||cur.cancelled||pastDeadline()){toast('変更できません。会計に申し出てください');editing=null;update();return}
       put(Object.assign({},cur,{y:n.y,c:n.c,pay:n.pay,kind:n.kind}));editing=null;cart.y=0;cart.c=0;cart.kind='';current=code;update();toast('注文を変更しました');
     });
   }
   function cancelOrder(code){
-    var o=orders[code];if(!o||o.paid||o.cancelled){toast('この注文はもう取り消せません。会計に申し出てください');update();return}
+    var o=orders[code];if(!o||o.paid||o.cancelled||pastDeadline()){toast('この注文はもう取り消せません。会計に申し出てください');update();return}
     ask('注文を取り消しますか？','番号 <b>'+code+'</b>　'+itemsText(o)+'／'+yen(total(o))+'<br>取り消すと食券は使えなくなります。','取り消す',true,function(){
       var cur=orders[code];
-      if(!cur||cur.paid||cur.cancelled){toast('支払いが確認されたため、取り消せません。会計に申し出てください');update();return}
+      if(!cur||cur.paid||cur.cancelled||pastDeadline()){toast('取り消せません。会計に申し出てください');update();return}
       put(Object.assign({},cur,{cancelled:true}));if(editing===code){editing=null;cart.y=0;cart.c=0;cart.kind=''}update();toast('注文を取り消しました');
+    });
+  }
+  function cashierCancel(code){
+    var o=orders[code];if(!o||o.paid||o.cancelled){toast('この注文は取り消せません');update();return}
+    ask('支払い前の注文を取り消しますか？','番号 <b>'+code+'</b>　'+itemsText(o)+'／'+yen(total(o))+'<br>取り消すと食券は使えなくなります。','取り消す',true,function(){
+      var cur=orders[code];
+      if(!cur||cur.paid||cur.cancelled){toast('この注文は取り消せません');update();return}
+      put(Object.assign({},cur,{cancelled:true}));toast('注文を取り消しました');
     });
   }
   function voidUnused(code){
@@ -458,13 +472,12 @@ body{margin:0}
     var items=[];['y','c'].forEach(function(k){if(o[k])items.push(o.void[k]?'<s class="meta">'+NAME[k]+'×'+o[k]+'（取り消し）</s>':NAME[k]+'×'+o[k])});
     var act;
     if(o.cancelled)act='<span class="pill bad">取り消し済み</span>';
-    else if(!o.paid)act='<button type="button" class="btn sm" data-act="pay" data-code="'+o.code+'">支払い確認</button>';
+    else if(!o.paid)act='<button type="button" class="btn sm" data-act="pay" data-code="'+o.code+'">支払い確認</button><button type="button" class="link" data-act="ccancel" data-code="'+o.code+'">注文を取り消す</button>';
     else{
       var any=o.used.y||o.used.c||o.void.y||o.void.c, left=refundKeys(o).length>0;
       var st=!left?'受け渡し済':any?'受け渡し中':'確認済み';
       act='<span class="pill ok">'+st+'</span>';
       if(left)act+='<button type="button" class="link" data-act="void" data-code="'+o.code+'">'+(any?'未使用分を取り消す':'注文を取り消す')+'</button>';
-      if(!any)act+='<button type="button" class="link" data-act="unpay" data-code="'+o.code+'">確認を戻す</button>';
     }
     return '<li class="orow'+(o.cancelled?' gone':'')+'"><div class="ocode">'+o.code+'</div><div><div class="items">'+items.join('　')+'</div>'+
       '<div class="meta"><span class="tag">'+(o.pay==='cash'?'現金':'PayPay')+'</span><span class="tag">'+kindLabel(o.kind)+'</span>'+yen(total(o))+(o.walkin?'　当日売り':'')+'</div></div>'+
@@ -566,7 +579,8 @@ body{margin:0}
     else if(a==='show')openCode(b.dataset.code);
     else if(a==='filter'){filter=b.dataset.f;update()}
     else if(a==='pay'){var o=orders[b.dataset.code];if(o)put(Object.assign({},o,{paid:true}))}
-    else if(a==='unpay'){var o2=orders[b.dataset.code];if(o2&&!o2.used.y&&!o2.used.c&&!o2.void.y&&!o2.void.c)put(Object.assign({},o2,{paid:false}))}
+    else if(a==='ccancel')cashierCancel(b.dataset.code);
+    else if(a==='newOrder'){current=null;update()}
     else if(a==='walk')issueWalk();
     else if(a==='hand')hand(b.dataset.code,k);
     else if(a==='undo')undo(k);
