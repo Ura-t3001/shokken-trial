@@ -208,7 +208,7 @@ body{margin:0}
     <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
-  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.1.1</span><span>(2026-11-03ビルド)</span></footer>
+  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.2.0</span><span>(2026-11-03ビルド)</span></footer>
   <nav id="bottom" aria-label="画面の切り替え">
     <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
     <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
@@ -229,13 +229,15 @@ body{margin:0}
   function $(s){return document.querySelector(s)}
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function yen(n){return n.toLocaleString('ja-JP')+'円'}
-  function total(o){return o.y*PRICE.y+o.c*PRICE.c}
+  function total(o){var v=o.void||{};return (v.y?0:o.y*PRICE.y)+(v.c?0:o.c*PRICE.c)}
+  function refundKeys(o){return ['y','c'].filter(function(k){return o[k]>0&&!(o.void&&o.void[k])&&!o.used[k]})}
+  function refundOf(o,ks){return ks.reduce(function(s,k){return s+o[k]*PRICE[k]},0)}
   function getView(){var v=location.hash.slice(1);return ['order','cashier','yaki','curry'].indexOf(v)>=0?v:'order'}
 
   function norm(id,d){
     if(!d||!/^\d{4}$/.test(id))return null;
     var n=function(v){return Math.max(0,Math.min(MAX,Math.floor(+v||0)))}, u=d.used||{};
-    return {code:id,y:n(d.y),c:n(d.c),pay:d.pay==='cash'?'cash':'paypay',paid:!!d.paid,walkin:!!d.walkin,cancelled:!!d.cancelled,used:{y:!!u.y,c:!!u.c},at:+d.at||0};
+    return {code:id,y:n(d.y),c:n(d.c),pay:d.pay==='cash'?'cash':'paypay',paid:!!d.paid,walkin:!!d.walkin,cancelled:!!d.cancelled,void:{y:!!(d.void&&d.void.y),c:!!(d.void&&d.void.c)},used:{y:!!u.y,c:!!u.c},at:+d.at||0};
   }
   try{var raw=JSON.parse(localStorage.getItem(KEY)||'{}');Object.keys(raw).forEach(function(k){var o=norm(k,raw[k]);if(o)orders[k]=o})}catch(e){}
   try{mine=JSON.parse(localStorage.getItem(MINE)||'[]').filter(function(c){return /^\d{4}$/.test(c)})}catch(e){mine=[]}
@@ -244,7 +246,7 @@ body{margin:0}
   function newOrder(y,c,pay,paid,walkin){
     var code,i=0;
     do{code=String(1000+Math.floor(Math.random()*9000));i++}while(orders[code]&&i<60);
-    return {code:code,y:y,c:c,pay:pay,paid:paid,walkin:walkin,cancelled:false,used:{y:false,c:false},at:Date.now()};
+    return {code:code,y:y,c:c,pay:pay,paid:paid,walkin:walkin,cancelled:false,void:{y:false,c:false},used:{y:false,c:false},at:Date.now()};
   }
   async function put(o){
     orders[o.code]=o; render();
@@ -261,7 +263,7 @@ body{margin:0}
     d.addEventListener('click',function(e){var b=e.target.closest('[data-d]');if(!b&&e.target!==d)return;d.remove();if(b&&b.dataset.d==='ok')fn()});
     document.body.appendChild(d);d.querySelector('[data-d="no"]').focus();
   }
-  function itemsText(o){var t=[];if(o.y)t.push(NAME.y+'×'+o.y);if(o.c)t.push(NAME.c+'×'+o.c);return t.join('　')||'なし'}
+  function itemsText(o){var t=[];if(o.y&&!(o.void&&o.void.y))t.push(NAME.y+'×'+o.y);if(o.c&&!(o.void&&o.void.c))t.push(NAME.c+'×'+o.c);return t.join('　')||'なし'}
   var toastTimer=null;
   function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},2400)}
 
@@ -287,7 +289,9 @@ body{margin:0}
 
   function ticketHtml(o,k){
     var used=o.used[k], body;
-    if(!o.paid){
+    if(o.void[k]){
+      body='<div class="qr empty">この食券は取り消されました</div>';
+    }else if(!o.paid){
       body='<div class="qr empty">支払いが確認されると<br>ここにQRが出ます</div>';
     }else{
       body='<div class="qr">'+qrSvg('SK-'+o.code+'-'+k.toUpperCase())+(used?'<div class="used-mark"><span>受け渡し済</span></div>':'')+'</div>';
@@ -371,6 +375,23 @@ body{margin:0}
       put(Object.assign({},cur,{cancelled:true}));if(editing===code){editing=null;cart.y=0;cart.c=0}update();toast('注文を取り消しました');
     });
   }
+  function voidUnused(code){
+    var o=orders[code];
+    if(!o||!o.paid||o.cancelled||!refundKeys(o).length){toast('この注文は取り消せません');update();return}
+    var ks=refundKeys(o),keep=['y','c'].filter(function(k){return o[k]>0&&ks.indexOf(k)<0&&!o.void[k]});
+    var txt='番号 <b>'+code+'</b><br>取り消す食券：'+ks.map(function(k){return NAME[k]+'×'+o[k]}).join('　')+
+      '<br><b>返金の目安：'+yen(refundOf(o,ks))+'</b>（'+(o.pay==='cash'?'現金':'PayPay')+'で受け取った分。返金はこのアプリでは行いません）'+
+      (keep.length?'<br>受け渡し済みの '+keep.map(function(k){return NAME[k]+'×'+o[k]}).join('　')+' は取り消せません。':'');
+    ask('未使用の食券を取り消しますか？',txt,'取り消す',true,function(){
+      var cur=orders[code];
+      if(!cur||!cur.paid||cur.cancelled){toast('この注文は取り消せません');update();return}
+      var ks2=refundKeys(cur);if(!ks2.length){toast('すでに受け渡し済み・取り消し済みです');update();return}
+      var v={y:cur.void.y,c:cur.void.c};ks2.forEach(function(k){v[k]=true});
+      var alive=['y','c'].some(function(k){return cur[k]>0&&!v[k]});
+      put(Object.assign({},cur,{void:v,cancelled:!alive}));
+      toast('取り消しました。返金の目安 '+yen(refundOf(cur,ks2)));
+    });
+  }
   function placeOrder(){
     if(editing){saveEdit();return}
     if(cart.y+cart.c===0){toast('食数を選んでください');return}
@@ -417,12 +438,17 @@ body{margin:0}
     $('#exp').hidden=!dl;
   }
   function orderRow(o){
-    var items=[];if(o.y)items.push(NAME.y+'×'+o.y);if(o.c)items.push(NAME.c+'×'+o.c);
+    var items=[];['y','c'].forEach(function(k){if(o[k])items.push(o.void[k]?'<s class="meta">'+NAME[k]+'×'+o[k]+'（取り消し）</s>':NAME[k]+'×'+o[k])});
     var act;
     if(o.cancelled)act='<span class="pill bad">取り消し済み</span>';
     else if(!o.paid)act='<button type="button" class="btn sm" data-act="pay" data-code="'+o.code+'">支払い確認</button>';
-    else if(o.used.y||o.used.c){var all=(!o.y||o.used.y)&&(!o.c||o.used.c);act='<span class="pill ok">'+(all?'受け渡し済':'受け渡し中')+'</span>'}
-    else act='<span class="pill ok">確認済み</span><button type="button" class="link" data-act="unpay" data-code="'+o.code+'">取り消す</button>';
+    else{
+      var any=o.used.y||o.used.c||o.void.y||o.void.c, left=refundKeys(o).length>0;
+      var st=!left?'受け渡し済':any?'受け渡し中':'確認済み';
+      act='<span class="pill ok">'+st+'</span>';
+      if(left)act+='<button type="button" class="link" data-act="void" data-code="'+o.code+'">'+(any?'未使用分を取り消す':'注文を取り消す')+'</button>';
+      if(!any)act+='<button type="button" class="link" data-act="unpay" data-code="'+o.code+'">確認を戻す</button>';
+    }
     return '<li class="orow'+(o.cancelled?' gone':'')+'"><div class="ocode">'+o.code+'</div><div><div class="items">'+items.join('　')+'</div>'+
       '<div class="meta"><span class="tag">'+(o.pay==='cash'?'現金':'PayPay')+'</span>'+yen(total(o))+(o.walkin?'　当日売り':'')+'</div></div>'+
       '<div class="oact">'+act+'</div></li>';
@@ -448,6 +474,7 @@ body{margin:0}
     var o=orders[code];
     if(!o)return msg('bad','見つかりません','この番号の注文はありません。番号を確認してください。');
     if(o.cancelled)return msg('bad','取り消し済み','この注文は取り消されています。食券は使えません。');
+    if(o.void[k])return msg('bad','取り消し済み',NAME[k]+'の食券は取り消されています。渡さないでください。');
     if(!o[k])return msg('warn','この注文に'+NAME[k]+'はありません','もう一方の窓口に案内してください。');
     if(!o.paid)return msg('warn','支払い未確認','会計で支払いを確認してもらってください。');
     if(o.used[k])return msg('bad','受け渡し済み',NAME[k]+o[k]+'食はすでに渡しています。');
@@ -455,7 +482,7 @@ body{margin:0}
   }
   function updateWindow(k){
     var done=0,paid=0;
-    Object.keys(orders).forEach(function(c){var o=orders[c];if(o.paid&&!o.cancelled){paid+=o[k];if(o.used[k])done+=o[k]}});
+    Object.keys(orders).forEach(function(c){var o=orders[c];if(o.paid&&!o.cancelled&&!o.void[k]){paid+=o[k];if(o.used[k])done+=o[k]}});
     $('#wDone').textContent=done;$('#wPaid').textContent=paid;
     var undo='';
     if(lastDone&&lastDone.k===k&&orders[lastDone.code]&&orders[lastDone.code].used[k])
@@ -517,11 +544,12 @@ body{margin:0}
     else if(a==='edit')startEdit(b.dataset.code);
     else if(a==='editend')endEdit();
     else if(a==='cancel')cancelOrder(b.dataset.code);
+    else if(a==='void')voidUnused(b.dataset.code);
     else if(a==='open')openCode($('#openCode').value);
     else if(a==='show')openCode(b.dataset.code);
     else if(a==='filter'){filter=b.dataset.f;update()}
     else if(a==='pay'){var o=orders[b.dataset.code];if(o)put(Object.assign({},o,{paid:true}))}
-    else if(a==='unpay'){var o2=orders[b.dataset.code];if(o2&&!o2.used.y&&!o2.used.c)put(Object.assign({},o2,{paid:false}))}
+    else if(a==='unpay'){var o2=orders[b.dataset.code];if(o2&&!o2.used.y&&!o2.used.c&&!o2.void.y&&!o2.void.c)put(Object.assign({},o2,{paid:false}))}
     else if(a==='walk')issueWalk();
     else if(a==='hand')hand(b.dataset.code,k);
     else if(a==='undo')undo(k);
