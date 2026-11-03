@@ -34,7 +34,7 @@
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:16px;line-height:1.6;
-  padding-block:16px 110px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  padding-block:16px 130px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .app{max-width:520px;margin:0 auto}
 h1,h2,h3,p{margin:0}
 button,input{font:inherit;color:inherit}
@@ -65,11 +65,11 @@ h1{font-size:20px;font-weight:700;opacity:.92;text-wrap:balance}
 .t-cash[aria-current="page"]{background:var(--brand-green);border-color:var(--brand-green);color:var(--green-ink)}
 .tab-y[aria-current="page"]{background:var(--y);border-color:var(--y);color:var(--y-ink)}
 .tab-c[aria-current="page"]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
-#bottom{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;gap:10px;background:var(--surface);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.bt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:60px;border-radius:12px;text-decoration:none;color:var(--muted);font-weight:700;font-size:15px;line-height:1.2;background:var(--bg)}
-.bt small{font-size:11px;font-weight:500}
+#bottom{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;gap:10px;background:var(--surface);border-top:1px solid var(--line);padding-top:10px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:76px;padding:10px 6px;border-radius:12px;text-decoration:none;color:var(--muted);font-weight:700;font-size:15px;line-height:1.3;background:var(--bg)}
+.bt small{font-size:12px;font-weight:500;line-height:1.4}
 .bt svg{width:24px;height:24px}
-.bt[aria-current="page"]{background:var(--brand-green);color:var(--green-ink)}
+.bt[aria-current="page"]{background:var(--muted);color:var(--surface)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
 .panel h2{font-size:18px;font-weight:900}
 .sub{color:var(--muted);font-size:14px}
@@ -189,7 +189,7 @@ label.lbl{display:block;font-weight:700;margin-bottom:8px}
 .credit b{color:var(--ink);font-weight:700}
 .credit span{display:block}
 .foot{margin-top:18px;text-align:center}
-#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
+#toast{position:fixed;left:50%;bottom:calc(116px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100vw - 32px);
   background:var(--btn);color:var(--btn-ink);padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -208,7 +208,7 @@ body{margin:0}
     <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
-  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.1.0</span><span>(2026-11-03ビルド)</span></footer>
+  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.1.1</span><span>(2026-11-03ビルド)</span></footer>
   <nav id="bottom" aria-label="画面の切り替え">
     <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
     <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
