@@ -208,7 +208,7 @@ body{margin:0}
     <a class="tab tab-c" data-v="curry" href="#curry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10l1.5-5h13L20 10M4 10h16M5.5 10v9h13v-9M10 19v-5h4v5"/></svg><span>カレー</span><small>窓口</small></a>
   </nav>
   <main id="main"></main>
-  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.3.2</span><span>(2026-11-03ビルド)</span></footer>
+  <footer class="credit" id="credit"><span>Supported by UTility</span><span>ver.1.3.3</span><span>(2026-11-03ビルド)</span></footer>
   <nav id="bottom" aria-label="画面の切り替え">
     <a class="bt" data-g="cust" href="#order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg><span>注文者</span><small>お客さん用</small></a>
     <a class="bt" data-g="staff" href="#cashier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg><span>スタッフ</span><small>会計・窓口</small></a>
@@ -426,11 +426,11 @@ body{margin:0}
       '<section class="panel"><div class="toolbar"><h2>注文一覧</h2><div class="seg" role="group" aria-label="表示の絞り込み">'+
       '<button type="button" data-act="filter" data-f="pending">未確認</button><button type="button" data-act="filter" data-f="all">すべて</button></div></div>'+
       '<ul class="olist" id="olist"></ul></section>'+
-      '<section class="panel"><h2>注文者の種類別</h2><p class="sub">取り消しを除いた件数と、支払い確認済みの売上です。</p><div id="kinds"></div></section>'+
       '<section class="panel"><h2>当日売り</h2><p class="sub">その場で現金を受け取り、すぐ有効な食券を発行します。</p>'+
       menuRow('walk','y')+menuRow('walk','c')+
       '<div class="sumline"><span>合計（現金）</span><strong id="wsum">0円</strong></div>'+
       '<button type="button" class="btn block" data-act="walk">発行する</button><div id="walkres"></div></section>'+
+      '<section class="panel"><h2>注文者の種類別</h2><p class="sub">取り消しを除いた件数と、支払い確認済みの売上です。</p><div id="kinds"></div></section>'+
       '<div class="foot"><button type="button" class="link" data-act="export" id="exp" hidden>記録を書き出す（CSV）</button></div>';
   }
   function updateCashier(){
